@@ -14,30 +14,28 @@ def log_handler(hits_list):
         status_code = hit['_source']['status']
         
         if host not in status_code_counts_by_host_uri:
-            print(host)
             status_code_counts_by_host_uri[host] = {}
         
         if uri not in status_code_counts_by_host_uri[host]:
-            print(uri)
             status_code_counts_by_host_uri[host][uri] = {}
         
         status_code_counts_by_host_uri[host][uri][status_code] = status_code_counts_by_host_uri[host][uri].get(status_code, 0) + 1
 
-    for host, uri_counts in status_code_counts_by_host_uri.items():
+    return status_code_counts_by_host_uri
+
+def tg_send(data):
+    for host, uri_counts in data.items():
         print(f"域名 {host}:")
         for uri, status_code_counts in uri_counts.items():
             print(f"  請求URI {uri}:")
             for status_code, count in status_code_counts.items():
                 print(f"    狀態碼 {status_code}: {count} 次訪問")
 
-def tg_send():
-    print('1')
-
 @app.route('/')
 def home():
     return "log-analysis"
 
-@app.route('/receive_json', methods=['POST'])
+@app.route('/api/v1/log/write', methods=['POST'])
 def receive_json():
     content_encoding = request.headers.get('content-encoding', '')
     if content_encoding == 'gzip':
@@ -48,7 +46,7 @@ def receive_json():
         content = request.json
 
     hits_list = json.loads("[" + content.get('context_hits') + "]")
-    log_handler(hits_list)
+    tg_send(log_handler(hits_list))
     return jsonify({"message": "JSON received", "data": content})
 
 if __name__ == '__main__':
