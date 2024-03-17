@@ -10,12 +10,13 @@ def home():
 
 @app.route('/receive_json', methods=['POST'])
 def receive_json():
-    content_encoding = request.headers['content-encoding']
-    print(content_encoding)
+    content_encoding = request.headers.get('content-encoding', '')
     if content_encoding == 'gzip':
         buf = io.BytesIO(request.data)
         gf = gzip.GzipFile(fileobj=buf)
         content = gf.read().decode('UTF-8')
+    else:
+        content = request.json
 
     print(content)
     return jsonify({"message": "JSON received", "data": content})
