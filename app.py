@@ -23,7 +23,8 @@ def log_handler(hits_list):
 
     return status_code_counts_by_host_uri
 
-def tg_send(data):
+def tg_send(ip, data):
+    print(f"異常IP訪問: {ip}")
     for host, uri_counts in data.items():
         print(f"域名 {host}:")
         for uri, status_code_counts in uri_counts.items():
@@ -41,12 +42,12 @@ def receive_json():
     if content_encoding == 'gzip':
         buf = io.BytesIO(request.data)
         gf = gzip.GzipFile(fileobj=buf)
-        content = gf.read().decode('UTF-8')
+        content = json.loads(gf.read().decode('UTF-8'))
     else:
         content = request.json
 
     hits_list = json.loads("[" + content.get('context_hits') + "]")
-    tg_send(log_handler(hits_list))
+    tg_send(content.get('alert_id'), log_handler(hits_list))
     return jsonify({"message": "JSON received", "data": content})
 
 if __name__ == '__main__':
