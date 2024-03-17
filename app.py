@@ -1,8 +1,37 @@
 import gzip
 import io
+import json
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
+
+def log_handler(hits_list):
+    status_code_counts_by_host_uri = {}
+    
+    for hit in hits_list:
+        host = hit['_source']['host']
+        uri = hit['_source']['request_uri']
+        status_code = hit['_source']['status']
+        
+        if host not in status_code_counts_by_host_uri:
+            print(host)
+            status_code_counts_by_host_uri[host] = {}
+        
+        if uri not in status_code_counts_by_host_uri[host]:
+            print(uri)
+            status_code_counts_by_host_uri[host][uri] = {}
+        
+        status_code_counts_by_host_uri[host][uri][status_code] = status_code_counts_by_host_uri[host][uri].get(status_code, 0) + 1
+
+    for host, uri_counts in status_code_counts_by_host_uri.items():
+        print(f"域名 {host}:")
+        for uri, status_code_counts in uri_counts.items():
+            print(f"  請求URI {uri}:")
+            for status_code, count in status_code_counts.items():
+                print(f"    狀態碼 {status_code}: {count} 次訪問")
+
+def tg_send():
+    print('1')
 
 @app.route('/')
 def home():
@@ -18,7 +47,8 @@ def receive_json():
     else:
         content = request.json
 
-    print(content)
+    hits_list = json.loads("[" + content.get('context_hits') + "]")
+    log_handler(hits_list)
     return jsonify({"message": "JSON received", "data": content})
 
 if __name__ == '__main__':
