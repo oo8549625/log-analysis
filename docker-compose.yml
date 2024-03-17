@@ -1,0 +1,9 @@
+version: '3'
+
+services:
+  log-analysis:
+    image: log-analysis:latest
+    ports:
+      - 8000:8000
+    container_name: log-analysis
+    
