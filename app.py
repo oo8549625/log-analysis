@@ -48,7 +48,7 @@ def release_lock(lock_fd):
     fcntl.flock(lock_fd, fcntl.LOCK_UN)
     lock_fd.close()
 
-async def tg_send(ip: str, date: str, total: str, data: object) -> None:
+async def tg_send(ip: str, date: str, total: str, link: str, data: object) -> None:
     bot = telegram.Bot(os.getenv("TELEGRAM_TOKEN"))
 
     date_obj_utc = datetime.strptime(date[:-1], "%Y-%m-%dT%H:%M:%S.%f")
@@ -57,12 +57,10 @@ async def tg_send(ip: str, date: str, total: str, data: object) -> None:
 
     domains_dir = "domains"
     os.makedirs(domains_dir, exist_ok=True)
-
-    message = f'異常IP: {ip}\n時間: {date_str_8[:-7]}\n訪問總次數: {total}\n'
+    message = f'異常IP: <code>{ip}</code>\n時間: {date_str_8[:-7]}\n訪問總次數: {total}\n連結: <a href="{link}">link</a>\n'
 
     for host, uri_counts in data.items():
-        message += f"域名 {host}\n"
-        
+        message += f"域名: {host}\n"
         file_path = f"{domains_dir}/{ip}-{host}.csv"
         lock_fd = acquire_lock(file_path)
         if lock_fd:
@@ -78,7 +76,7 @@ async def tg_send(ip: str, date: str, total: str, data: object) -> None:
             finally:
                 release_lock(lock_fd)
 
-    await bot.sendMessage(chat_id=os.getenv("CHAT_ID"), text=message)
+    await bot.sendMessage(chat_id=os.getenv("CHAT_ID"), text=message, parse_mode='html')
     for host in data.keys():
         document = open(f"{domains_dir}/{ip}-{host}.csv", 'rb')
         await bot.send_document(chat_id=os.getenv("CHAT_ID"), document=document)
@@ -99,7 +97,7 @@ def receive_json():
         content = request.json
 
     hits_list = json.loads("[" + content.get('context_hits') + "]")
-    asyncio.run(tg_send(content.get('alert_id'), content.get('context_date'), content.get('context_value'), log_handler(hits_list)))
+    asyncio.run(tg_send(content.get('alert_id'), content.get('context_date'), content.get('context_value'), content.get('context_link'), log_handler(hits_list)))
     return jsonify({"message": "JSON received", "data": content})
 
 if __name__ == '__main__':

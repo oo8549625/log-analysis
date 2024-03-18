@@ -28,13 +28,6 @@
 > ```
 </details>
 
-### 日誌印出規則
-```bash
-域名 {host}:
-  請求URI {uri}:
-    狀態碼 {status}: {count} 次訪問
-```
-
 ### 告警發送telegram
 
 ## 開發
